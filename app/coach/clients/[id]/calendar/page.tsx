@@ -64,8 +64,9 @@ export default function ClientCalendarPage() {
     const [{ data: c }, { data: w }, { data: cl }] = await Promise.all([
       supabase.from('clients').select('*, profile:profiles!id(full_name, email)').eq('id', id).single(),
       supabase.from('calendar_workouts').select('*, exercises:calendar_exercises(*)').eq('client_id', id),
-      supabase.from('clients').select('*, profile:profiles!id(full_name)').eq('coach_id', user!.id).eq('active', true),
+      supabase.from('clients').select('*').eq('coach_id', user!.id).eq('active', true),
     ])
+    const c = clientData ? { ...clientData, profile: profileData } : null
     setClient(c)
     setAllClients(cl ?? [])
     setPasteTargetClient(id as string)

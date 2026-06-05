@@ -17,8 +17,13 @@ export default function MessagesPage() {
     async function init() {
       const { data: { user } } = await supabase.auth.getUser()
       setCoachId(user!.id)
-      const { data } = await supabase.from('clients').select('*, profile:profiles!id(full_name, email)').eq('coach_id', user!.id).eq('active', true)
-      setClients(data ?? [])
+      const { data: clientsData } = await supabase.from('clients').select('*').eq('coach_id', user!.id).eq('active', true)
+      if (clientsData && clientsData.length > 0) {
+        const ids = clientsData.map((c: any) => c.id)
+        const { data: profilesData } = await supabase.from('profiles').select('id, full_name, email').in('id', ids)
+        const merged = clientsData.map((c: any) => ({ ...c, profile: profilesData?.find((p: any) => p.id === c.id) ?? null }))
+        setClients(merged)
+      }
     }
     init()
   }, [])

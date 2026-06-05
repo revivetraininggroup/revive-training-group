@@ -13,8 +13,8 @@ export default async function CoachDashboard() {
 
   const [{ count: clientCount }, { data: recentCheckins }, { data: recentLogs }] = await Promise.all([
     supabase.from('clients').select('*', { count: 'exact', head: true }).eq('coach_id', user.id).eq('active', true),
-    supabase.from('checkins').select('*, client:profiles!client_id(full_name)').order('submitted_at', { ascending: false }).limit(5),
-    supabase.from('workout_logs').select('*, client:profiles!client_id(full_name)').order('logged_at', { ascending: false }).limit(5),
+    supabase.from('checkins').select('*').order('submitted_at', { ascending: false }).limit(5),
+    supabase.from('workout_logs').select('*').order('logged_at', { ascending: false }).limit(5),
   ])
 
   const today = new Date()

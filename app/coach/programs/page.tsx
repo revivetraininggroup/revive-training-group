@@ -16,8 +16,8 @@ export default function ProgramsPage() {
   async function load() {
     const { data: { user } } = await supabase.auth.getUser()
     const [{ data: p }, { data: c }] = await Promise.all([
-      supabase.from('programs').select('*, client:profiles!client_id(full_name)').eq('coach_id', user!.id).order('created_at', { ascending: false }),
-      supabase.from('clients').select('*, profile:profiles!id(full_name)').eq('coach_id', user!.id).eq('active', true),
+      supabase.from('programs').select('*').eq('coach_id', user!.id).order('created_at', { ascending: false }),
+      supabase.from('clients').select('*').eq('coach_id', user!.id).eq('active', true),
     ])
     setPrograms(p ?? [])
     setClients(c ?? [])
