@@ -1,62 +1,82 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 
 const COACH_EMAIL = process.env.COACH_EMAIL || 'raikeschristopher@gmail.com'
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 export async function POST(req: Request) {
   const { email, full_name, password, goal, notes } = await req.json()
 
+  // Verify coach
   const supabase = createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (user.email !== COACH_EMAIL) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const adminSupabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-
-  // Step 1: Create auth user
-  const { data: newUser, error: createError } = await adminSupabase.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-    user_metadata: { full_name, role: 'client' }
+  // Step 1: Create auth user via Supabase Admin REST API directly
+  const createUserRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+      'apikey': SERVICE_ROLE_KEY,
+    },
+    body: JSON.stringify({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { full_name, role: 'client' }
+    })
   })
 
-  if (createError) return NextResponse.json({ error: createError.message }, { status: 400 })
+  const newUser = await createUserRes.json()
+  if (!createUserRes.ok) return NextResponse.json({ error: newUser.message || 'Failed to create user' }, { status: 400 })
 
-  const newUserId = newUser.user.id
+  const newUserId = newUser.id
 
-  // Step 2: Create profile directly (don't rely on trigger)
-  const { error: profileError } = await adminSupabase
-    .from('profiles')
-    .upsert({
+  // Step 2: Create profile via REST API
+  const profileRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+      'apikey': SERVICE_ROLE_KEY,
+      'Prefer': 'return=minimal'
+    },
+    body: JSON.stringify({
       id: newUserId,
       email,
       full_name,
       role: 'client',
-    }, { onConflict: 'id' })
+    })
+  })
 
-  if (profileError) {
-    console.error('Profile error:', profileError)
-    return NextResponse.json({ error: 'Failed to create profile: ' + profileError.message }, { status: 400 })
+  if (!profileRes.ok) {
+    const err = await profileRes.text()
+    return NextResponse.json({ error: 'Failed to create profile: ' + err }, { status: 400 })
   }
 
-  // Step 3: Create client record
-  const { error: clientError } = await adminSupabase
-    .from('clients')
-    .insert({
+  // Step 3: Create client record via REST API
+  const clientRes = await fetch(`${SUPABASE_URL}/rest/v1/clients`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+      'apikey': SERVICE_ROLE_KEY,
+      'Prefer': 'return=minimal'
+    },
+    body: JSON.stringify({
       id: newUserId,
       coach_id: user.id,
       goal: goal || null,
       notes: notes || null,
     })
+  })
 
-  if (clientError) {
-    console.error('Client error:', clientError)
-    return NextResponse.json({ error: 'Failed to create client: ' + clientError.message }, { status: 400 })
+  if (!clientRes.ok) {
+    const err = await clientRes.text()
+    return NextResponse.json({ error: 'Failed to create client: ' + err }, { status: 400 })
   }
 
   return NextResponse.json({ success: true })
