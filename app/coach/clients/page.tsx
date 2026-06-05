@@ -18,11 +18,15 @@ export default function ClientsPage() {
     if (!user) return
 
     // First get clients
-    const { data: clientsData } = await supabase
+    console.log('Loading clients for user:', user.id)
+    const { data: clientsData, error: clientsError } = await supabase
       .from('clients')
       .select('*')
       .eq('coach_id', user.id)
       .order('start_date', { ascending: false })
+
+    console.log('Clients data:', clientsData)
+    console.log('Clients error:', clientsError)
 
     if (!clientsData || clientsData.length === 0) {
       setClients([])
