@@ -17,13 +17,15 @@ export default function ClientDetailPage() {
 
   useEffect(() => {
     async function load() {
-      const [{ data: c }, { data: p }, { data: ci }, { data: s }, { data: l }] = await Promise.all([
-        supabase.from('clients').select('*, profile:profiles!id(*)').eq('id', id).single(),
+      const [{ data: clientData }, { data: profileData }, { data: p }, { data: ci }, { data: s }, { data: l }] = await Promise.all([
+        supabase.from('clients').select('*').eq('id', id).single(),
+        supabase.from('profiles').select('*').eq('id', id).single(),
         supabase.from('programs').select('*').eq('client_id', id).order('created_at', { ascending: false }),
         supabase.from('checkins').select('*').eq('client_id', id).order('submitted_at', { ascending: false }),
         supabase.from('body_stats').select('*').eq('client_id', id).order('logged_at', { ascending: false }),
         supabase.from('workout_logs').select('*').eq('client_id', id).order('logged_at', { ascending: false }),
       ])
+      const c = clientData ? { ...clientData, profile: profileData } : null
       setClient(c); setPrograms(p ?? []); setCheckins(ci ?? []); setStats(s ?? []); setLogs(l ?? [])
     }
     load()
