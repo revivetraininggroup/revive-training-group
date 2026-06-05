@@ -15,12 +15,35 @@ export default function ClientsPage() {
 
   async function loadClients() {
     const { data: { user } } = await supabase.auth.getUser()
-    const { data } = await supabase
+    if (!user) return
+
+    // First get clients
+    const { data: clientsData } = await supabase
       .from('clients')
-      .select('*, profile:profiles!id(full_name, email, created_at)')
-      .eq('coach_id', user!.id)
+      .select('*')
+      .eq('coach_id', user.id)
       .order('start_date', { ascending: false })
-    setClients(data ?? [])
+
+    if (!clientsData || clientsData.length === 0) {
+      setClients([])
+      setLoading(false)
+      return
+    }
+
+    // Then get profiles for each client
+    const clientIds = clientsData.map(c => c.id)
+    const { data: profilesData } = await supabase
+      .from('profiles')
+      .select('id, full_name, email, created_at')
+      .in('id', clientIds)
+
+    // Merge
+    const merged = clientsData.map(c => ({
+      ...c,
+      profile: profilesData?.find(p => p.id === c.id) ?? null
+    }))
+
+    setClients(merged)
     setLoading(false)
   }
 
