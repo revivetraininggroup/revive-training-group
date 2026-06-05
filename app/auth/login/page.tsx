@@ -26,19 +26,13 @@ export default function LoginPage() {
       return
     }
 
-    // Use admin client to bypass RLS for role check
-    const adminClient = createSupabaseClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
-    const { data: profile } = await adminClient
-      .from('profiles')
-      .select('role')
-      .eq('id', data.user.id)
-      .single()
-
-    if (profile?.role === 'coach') router.push('/coach')
-    else router.push('/client/dashboard')
+    // Check if coach by email
+    const COACH_EMAIL = process.env.NEXT_PUBLIC_COACH_EMAIL || 'raikeschristopher@gmail.com'
+    if (data.user.email === COACH_EMAIL) {
+      router.push('/coach')
+    } else {
+      router.push('/client/dashboard')
+    }
   }
 
   return (
