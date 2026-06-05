@@ -129,21 +129,27 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
                 href={item.href}
                 title={item.label}
                 className={clsx(
-                  'flex items-center justify-center w-full h-9 rounded-lg transition-colors',
+                  'relative flex items-center justify-center w-full h-9 rounded-lg transition-colors',
                   pathname === item.href
                     ? 'bg-sky-50 text-sky-600'
                     : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'
                 )}
               >
                 {navIcons[item.href]}
+                {item.href === '/client/messages' && unreadCount > 0 && (
+                  <span className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-sky-600"></span>
+                )}
               </Link>
             ) : (
               <Link
                 key={item.href}
                 href={item.href}
-                className={clsx('sidebar-link', { active: pathname === item.href })}
+                className={clsx('sidebar-link flex items-center justify-between', { active: pathname === item.href })}
               >
-                {item.label}
+                <span>{item.label}</span>
+                {item.href === '/client/messages' && unreadCount > 0 && (
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-600 text-white text-[10px] font-bold">{unreadCount}</span>
+                )}
               </Link>
             )
           ))}
