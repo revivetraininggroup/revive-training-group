@@ -2,16 +2,16 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 
+const COACH_EMAIL = process.env.COACH_EMAIL || 'raikeschristopher@gmail.com'
+
 export async function POST(req: Request) {
   const { email, full_name, goal, notes } = await req.json()
 
-  // Verify requester is coach
+  // Verify requester is coach by email
   const supabase = createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'coach') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (user.email !== COACH_EMAIL) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   // Use service role to create the client user
   const adminSupabase = createClient(
@@ -24,7 +24,7 @@ export async function POST(req: Request) {
   const { data: newUser, error: createError } = await adminSupabase.auth.admin.createUser({
     email,
     password: tempPassword,
-    email_confirm: false,
+    email_confirm: true,
     user_metadata: { full_name, role: 'client' }
   })
 
