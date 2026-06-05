@@ -5,7 +5,7 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 const COACH_EMAIL = process.env.COACH_EMAIL || 'raikeschristopher@gmail.com'
 
 export async function POST(req: Request) {
-  const { email, full_name, goal, notes } = await req.json()
+  const { email, full_name, password, goal, notes } = await req.json()
 
   // Verify requester is coach by email
   const supabase = createServerSupabaseClient()
@@ -19,11 +19,9 @@ export async function POST(req: Request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
-  const tempPassword = Math.random().toString(36).slice(-10) + 'A1!'
-
   const { data: newUser, error: createError } = await adminSupabase.auth.admin.createUser({
     email,
-    password: tempPassword,
+    password: password,
     email_confirm: true,
     user_metadata: { full_name, role: 'client' }
   })
@@ -31,18 +29,14 @@ export async function POST(req: Request) {
   if (createError) return NextResponse.json({ error: createError.message }, { status: 400 })
 
   // Create client record
-  await adminSupabase.from('clients').insert({
+  const { error: clientError } = await adminSupabase.from('clients').insert({
     id: newUser.user.id,
     coach_id: user.id,
-    goal,
-    notes,
+    goal: goal || null,
+    notes: notes || null,
   })
 
-  // Send password reset so client can set their own password
-  await adminSupabase.auth.admin.generateLink({
-    type: 'recovery',
-    email,
-  })
+  if (clientError) return NextResponse.json({ error: clientError.message }, { status: 400 })
 
   return NextResponse.json({ success: true })
 }

@@ -8,7 +8,7 @@ export default function ClientsPage() {
   const [clients, setClients] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
-  const [form, setForm] = useState({ email: '', full_name: '', goal: '', notes: '' })
+  const [form, setForm] = useState({ email: '', full_name: '', password: '', goal: '', notes: '' })
   const [adding, setAdding] = useState(false)
   const [error, setError] = useState('')
   const supabase = createClient()
@@ -46,7 +46,7 @@ export default function ClientsPage() {
     }
 
     setShowAdd(false)
-    setForm({ email: '', full_name: '', goal: '', notes: '' })
+    setForm({ email: '', full_name: '', password: '', goal: '', notes: '' })
     loadClients()
     setAdding(false)
   }
@@ -80,7 +80,7 @@ export default function ClientsPage() {
                 <textarea className="input" rows={2} value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} />
               </div>
               {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
-              <p className="text-xs text-slate-500">The client will receive an email to set their password.</p>
+              <p className="text-xs text-slate-500">Share the email and password with your client directly.</p>
               <div className="flex gap-2 pt-2">
                 <button type="submit" className="btn-primary" disabled={adding}>{adding ? 'Adding...' : 'Add client'}</button>
                 <button type="button" className="btn-secondary" onClick={() => setShowAdd(false)}>Cancel</button>
