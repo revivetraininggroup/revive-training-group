@@ -7,6 +7,7 @@ type PhotoAngle = 'front' | 'side' | 'back'
 
 export default function ClientPhotosPage() {
   const [photos, setPhotos] = useState<any[]>([])
+  const [signedUrls, setSignedUrls] = useState<Record<string, Record<string, string>>>({})
   const [uploading, setUploading] = useState(false)
   const [userId, setUserId] = useState<string>('')
   const [preview, setPreview] = useState<{ front: string | null, side: string | null, back: string | null }>({ front: null, side: null, back: null })
@@ -19,6 +20,16 @@ export default function ClientPhotosPage() {
   const backRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()
 
+  async function getSignedUrl(fullUrl: string): Promise<string> {
+    if (!fullUrl) return ''
+    // Extract just the path after the bucket name
+    const match = fullUrl.match(/progress-photos\/(.+)/)
+    if (!match) return fullUrl
+    const path = match[1]
+    const { data } = await supabase.storage.from('progress-photos').createSignedUrl(path, 3600)
+    return data?.signedUrl ?? fullUrl
+  }
+
   async function load() {
     const { data: { user } } = await supabase.auth.getUser()
     setUserId(user!.id)
@@ -28,6 +39,16 @@ export default function ClientPhotosPage() {
       .eq('client_id', user!.id)
       .order('photo_date', { ascending: false })
     setPhotos(data ?? [])
+
+    // Generate signed URLs for all photos
+    const urlMap: Record<string, Record<string, string>> = {}
+    for (const photo of data ?? []) {
+      urlMap[photo.id] = {}
+      if (photo.front_url) urlMap[photo.id].front = await getSignedUrl(photo.front_url)
+      if (photo.side_url) urlMap[photo.id].side = await getSignedUrl(photo.side_url)
+      if (photo.back_url) urlMap[photo.id].back = await getSignedUrl(photo.back_url)
+    }
+    setSignedUrls(urlMap)
   }
 
   useEffect(() => { load() }, [])
@@ -41,18 +62,15 @@ export default function ClientPhotosPage() {
   }
 
   async function uploadPhoto(file: File, angle: PhotoAngle): Promise<string | null> {
-    const ext = file.name.split('.').pop()
+    const ext = file.name.split('.').pop() ?? 'jpg'
     const path = `${userId}/${Date.now()}-${angle}.${ext}`
-    const { error } = await supabase.storage.from('progress-photos').upload(path, file)
-    if (error) { console.error(error); return null }
+    const { error } = await supabase.storage.from('progress-photos').upload(path, file, {
+      contentType: file.type,
+      upsert: false,
+    })
+    if (error) { console.error('Upload error:', error); return null }
     const { data } = supabase.storage.from('progress-photos').getPublicUrl(path)
     return data.publicUrl
-  }
-
-  async function getSignedUrl(path: string): Promise<string> {
-    const fileName = path.split('/progress-photos/')[1] ?? path
-    const { data } = await supabase.storage.from('progress-photos').createSignedUrl(fileName, 3600)
-    return data?.signedUrl ?? path
   }
 
   async function savePhotos() {
@@ -126,11 +144,7 @@ export default function ClientPhotosPage() {
           <label className="label">Notes (optional)</label>
           <input className="input" placeholder="How are you feeling? Any changes you notice?" value={notes} onChange={e => setNotes(e.target.value)} />
         </div>
-        <button
-          className="btn-primary"
-          onClick={savePhotos}
-          disabled={!hasAnyFile || saving}
-        >
+        <button className="btn-primary" onClick={savePhotos} disabled={!hasAnyFile || saving}>
           {saving ? 'Uploading...' : 'Submit photos'}
         </button>
       </div>
@@ -169,9 +183,9 @@ export default function ClientPhotosPage() {
                 <div className="mt-4 border-t border-slate-100 pt-4">
                   <div className="grid grid-cols-3 gap-3">
                     {[
-                      { url: photo.front_url, label: 'Front' },
-                      { url: photo.side_url, label: 'Side' },
-                      { url: photo.back_url, label: 'Back' },
+                      { url: signedUrls[photo.id]?.front, label: 'Front' },
+                      { url: signedUrls[photo.id]?.side, label: 'Side' },
+                      { url: signedUrls[photo.id]?.back, label: 'Back' },
                     ].map(({ url, label }) => url ? (
                       <div key={label}>
                         <p className="text-xs font-medium text-slate-400 mb-1">{label}</p>
