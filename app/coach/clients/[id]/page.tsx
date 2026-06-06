@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 
 export default function ClientDetailPage() {
@@ -13,6 +13,12 @@ export default function ClientDetailPage() {
   const [stats, setStats] = useState<any[]>([])
   const [logs, setLogs] = useState<any[]>([])
   const [tab, setTab] = useState<'overview' | 'programs' | 'checkins' | 'stats' | 'logs'>('overview')
+  const [showProfile, setShowProfile] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [editForm, setEditForm] = useState({ full_name: '', goal: '', notes: '' })
+  const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
@@ -30,6 +36,26 @@ export default function ClientDetailPage() {
     }
     load()
   }, [id])
+
+  useEffect(() => {
+    if (client) setEditForm({ full_name: client.profile?.full_name ?? '', goal: client.goal ?? '', notes: client.notes ?? '' })
+  }, [client])
+
+  async function saveEdit() {
+    setSaving(true)
+    await supabase.from('profiles').update({ full_name: editForm.full_name }).eq('id', id)
+    await supabase.from('clients').update({ goal: editForm.goal, notes: editForm.notes }).eq('id', id)
+    setSaving(false)
+    setShowProfile(false)
+    setClient((c: any) => ({ ...c, goal: editForm.goal, notes: editForm.notes, profile: { ...c.profile, full_name: editForm.full_name } }))
+  }
+
+  async function deleteClient() {
+    setDeleting(true)
+    await supabase.from('clients').delete().eq('id', id)
+    await supabase.from('profiles').delete().eq('id', id)
+    router.push('/coach/clients')
+  }
 
   if (!client) return <div className="text-slate-400">Loading...</div>
 
@@ -58,6 +84,7 @@ export default function ClientDetailPage() {
             <Link href={`/coach/clients/${id}/nutrition`} className="btn-secondary">Nutrition plan</Link>
             <Link href={`/coach/clients/${id}/photos`} className="btn-secondary">Photos</Link>
             <Link href={`/coach/messages?client=${id}`} className="btn-secondary">Message</Link>
+            <button onClick={() => setShowProfile(true)} className="btn-secondary">⚙️ Edit profile</button>
           </div>
         </div>
         {client.notes && <p className="mt-3 text-sm text-slate-500 bg-slate-50 px-3 py-2 rounded-lg">{client.notes}</p>}
@@ -154,6 +181,62 @@ export default function ClientDetailPage() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Edit Profile Modal */}
+      {showProfile && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
+          <div className="card w-full max-w-md shadow-xl">
+            <h2 className="section-title mb-4">Edit client profile</h2>
+            <div className="space-y-3">
+              <div>
+                <label className="label">Full name</label>
+                <input className="input" value={editForm.full_name} onChange={e => setEditForm({ ...editForm, full_name: e.target.value })} />
+              </div>
+              <div>
+                <label className="label">Goal</label>
+                <input className="input" placeholder="e.g. Lose 20 lbs, build muscle" value={editForm.goal} onChange={e => setEditForm({ ...editForm, goal: e.target.value })} />
+              </div>
+              <div>
+                <label className="label">Notes</label>
+                <textarea className="input" rows={3} value={editForm.notes} onChange={e => setEditForm({ ...editForm, notes: e.target.value })} />
+              </div>
+            </div>
+            <div className="flex items-center justify-between mt-6">
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="text-sm font-medium text-red-500 hover:text-red-700 transition-colors"
+              >
+                🗑 Delete client
+              </button>
+              <div className="flex gap-2">
+                <button onClick={() => setShowProfile(false)} className="btn-secondary">Cancel</button>
+                <button onClick={saveEdit} disabled={saving} className="btn-primary">{saving ? 'Saving...' : 'Save changes'}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+          <div className="card w-full max-w-sm shadow-xl text-center">
+            <div className="text-4xl mb-3">⚠️</div>
+            <h2 className="text-lg font-semibold text-slate-900 mb-2">Delete {client.profile?.full_name}?</h2>
+            <p className="text-sm text-slate-500 mb-6">This will permanently delete this client and all their data. This cannot be undone.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setShowDeleteConfirm(false)} className="btn-secondary flex-1">Cancel</button>
+              <button
+                onClick={deleteClient}
+                disabled={deleting}
+                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+              >
+                {deleting ? 'Deleting...' : 'Yes, delete'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

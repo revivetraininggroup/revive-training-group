@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import AskAI from './AskAI'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'

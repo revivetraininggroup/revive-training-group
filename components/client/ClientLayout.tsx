@@ -68,11 +68,20 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       if (!user) return
       const { data: clientRecord } = await supabase.from('clients').select('coach_id').eq('id', user.id).single()
       if (!clientRecord?.coach_id) return
-      const { data: msgs } = await supabase.from('messages').select('id').eq('recipient_id', user.id).eq('sender_id', clientRecord.coach_id).eq('read', false)
+      const { data: msgs, error } = await supabase
+        .from('messages')
+        .select('id, read')
+        .eq('recipient_id', user.id)
+        .eq('sender_id', clientRecord.coach_id)
+        .eq('read', false)
       setUnreadCount(msgs?.length ?? 0)
     }
     fetchUnread()
-    const channel = supabase.channel('client-layout-unread').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, fetchUnread).subscribe()
+    const channel = supabase
+      .channel('client-layout-unread-' + Math.random())
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => fetchUnread())
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, () => fetchUnread())
+      .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [])
   const pathname = usePathname()
