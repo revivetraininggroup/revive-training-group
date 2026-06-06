@@ -56,6 +56,7 @@ const navItems = [
   { href: '/client/stats', label: 'My Stats' },
   { href: '/client/photos', label: 'Photos' },
   { href: '/client/messages', label: 'Messages' },
+  { href: '/client/onboarding', label: 'My Profile' },
 ]
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {

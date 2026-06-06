@@ -12,7 +12,8 @@ export default function ClientDetailPage() {
   const [checkins, setCheckins] = useState<any[]>([])
   const [stats, setStats] = useState<any[]>([])
   const [logs, setLogs] = useState<any[]>([])
-  const [tab, setTab] = useState<'overview' | 'programs' | 'checkins' | 'stats' | 'logs'>('overview')
+  const [onboarding, setOnboarding] = useState<any>(null)
+  const [tab, setTab] = useState<'overview' | 'programs' | 'checkins' | 'stats' | 'logs' | 'onboarding'>('overview')
   const [showProfile, setShowProfile] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [editForm, setEditForm] = useState({ full_name: '', goal: '', notes: '' })
@@ -23,16 +24,17 @@ export default function ClientDetailPage() {
 
   useEffect(() => {
     async function load() {
-      const [{ data: clientData }, { data: profileData }, { data: p }, { data: ci }, { data: s }, { data: l }] = await Promise.all([
+      const [{ data: clientData }, { data: profileData }, { data: p }, { data: ci }, { data: s }, { data: l }, { data: ob }] = await Promise.all([
         supabase.from('clients').select('*').eq('id', id).single(),
         supabase.from('profiles').select('*').eq('id', id).single(),
         supabase.from('programs').select('*').eq('client_id', id).order('created_at', { ascending: false }),
         supabase.from('checkins').select('*').eq('client_id', id).order('submitted_at', { ascending: false }),
         supabase.from('body_stats').select('*').eq('client_id', id).order('logged_at', { ascending: false }),
         supabase.from('calendar_workout_logs').select('*, workout:calendar_workouts(title, scheduled_date)').eq('client_id', id).order('logged_at', { ascending: false }),
+        supabase.from('client_onboarding').select('*').eq('client_id', id).single(),
       ])
       const c = clientData ? { ...clientData, profile: profileData } : null
-      setClient(c); setPrograms(p ?? []); setCheckins(ci ?? []); setStats(s ?? []); setLogs(l ?? [])
+      setClient(c); setPrograms(p ?? []); setCheckins(ci ?? []); setStats(s ?? []); setLogs(l ?? []); setOnboarding(ob ?? null)
     }
     load()
   }, [id])
@@ -59,7 +61,7 @@ export default function ClientDetailPage() {
 
   if (!client) return <div className="text-slate-400">Loading...</div>
 
-  const tabs = ['overview', 'programs', 'checkins', 'stats', 'logs'] as const
+  const tabs = ['overview', 'programs', 'checkins', 'stats', 'logs', 'onboarding'] as const
 
   return (
     <div>
@@ -184,6 +186,76 @@ export default function ClientDetailPage() {
         </div>
       )}
 
+      {tab === 'onboarding' && (
+        <div>
+          {!onboarding ? (
+            <div className="card text-center py-12">
+              <p className="text-4xl mb-3">📋</p>
+              <p className="text-slate-600 font-medium">No onboarding form submitted yet</p>
+              <p className="text-slate-400 text-sm mt-1">Your client will see this form in their app under "My Profile"</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <p className="text-xs text-slate-400">Last updated: {new Date(onboarding.updated_at).toLocaleDateString()}</p>
+
+              {(onboarding.injuries || onboarding.physical_limitations) && (
+                <div className="card">
+                  <h3 className="section-title mb-3">🩹 Injuries & Limitations</h3>
+                  {onboarding.injuries && <InfoRow label="Injuries" value={onboarding.injuries} />}
+                  {onboarding.physical_limitations && <InfoRow label="Limitations" value={onboarding.physical_limitations} />}
+                </div>
+              )}
+
+              {(onboarding.training_experience || onboarding.equipment_access || onboarding.equipment_details) && (
+                <div className="card">
+                  <h3 className="section-title mb-3">🏋️ Training & Equipment</h3>
+                  {onboarding.training_experience && <InfoRow label="Experience" value={onboarding.training_experience} />}
+                  {onboarding.equipment_access && <InfoRow label="Equipment" value={onboarding.equipment_access} />}
+                  {onboarding.equipment_details && <InfoRow label="Details" value={onboarding.equipment_details} />}
+                </div>
+              )}
+
+              {(onboarding.days_per_week || onboarding.preferred_days || onboarding.session_duration || onboarding.best_time_to_train) && (
+                <div className="card">
+                  <h3 className="section-title mb-3">📅 Schedule</h3>
+                  {onboarding.days_per_week && <InfoRow label="Days/week" value={`${onboarding.days_per_week} days`} />}
+                  {onboarding.preferred_days && <InfoRow label="Preferred days" value={onboarding.preferred_days} />}
+                  {onboarding.session_duration && <InfoRow label="Session length" value={onboarding.session_duration} />}
+                  {onboarding.best_time_to_train && <InfoRow label="Best time" value={onboarding.best_time_to_train} />}
+                </div>
+              )}
+
+              {(onboarding.job_type || onboarding.avg_sleep_hours || onboarding.stress_level || onboarding.water_intake) && (
+                <div className="card">
+                  <h3 className="section-title mb-3">🌙 Lifestyle</h3>
+                  {onboarding.job_type && <InfoRow label="Job type" value={onboarding.job_type} />}
+                  {onboarding.avg_sleep_hours && <InfoRow label="Sleep" value={`${onboarding.avg_sleep_hours} hrs/night`} />}
+                  {onboarding.stress_level && <InfoRow label="Stress level" value={onboarding.stress_level} />}
+                  {onboarding.water_intake && <InfoRow label="Water intake" value={onboarding.water_intake} />}
+                </div>
+              )}
+
+              {(onboarding.meals_per_day || onboarding.dietary_restrictions || onboarding.current_supplements || onboarding.nutrition_experience) && (
+                <div className="card">
+                  <h3 className="section-title mb-3">🥗 Nutrition & Supplements</h3>
+                  {onboarding.meals_per_day && <InfoRow label="Meals/day" value={onboarding.meals_per_day} />}
+                  {onboarding.dietary_restrictions && <InfoRow label="Dietary restrictions" value={onboarding.dietary_restrictions} />}
+                  {onboarding.current_supplements && <InfoRow label="Supplements" value={onboarding.current_supplements} />}
+                  {onboarding.nutrition_experience && <InfoRow label="Nutrition tracking" value={onboarding.nutrition_experience} />}
+                </div>
+              )}
+
+              {onboarding.additional_notes && (
+                <div className="card">
+                  <h3 className="section-title mb-3">💬 Additional Notes</h3>
+                  <p className="text-sm text-slate-600">{onboarding.additional_notes}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Edit Profile Modal */}
       {showProfile && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
@@ -279,6 +351,16 @@ function CoachFeedbackForm({ checkinId, onSave }: { checkinId: string, onSave: (
       <label className="label">Your feedback</label>
       <textarea className="input" rows={2} placeholder="Write your feedback for this client..." value={feedback} onChange={e => setFeedback(e.target.value)} />
       <button className="btn-primary mt-2 text-xs" onClick={save} disabled={saving || !feedback}>{saving ? 'Saving...' : 'Send feedback'}</button>
+    </div>
+  )
+}
+
+
+function InfoRow({ label, value }: { label: string, value: string }) {
+  return (
+    <div className="flex gap-3 py-1.5 border-b border-slate-50 last:border-0">
+      <span className="text-xs font-medium text-slate-400 w-36 flex-shrink-0 pt-0.5">{label}</span>
+      <span className="text-sm text-slate-700">{value}</span>
     </div>
   )
 }
