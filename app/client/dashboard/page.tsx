@@ -69,11 +69,11 @@ export default function ClientDashboard() {
         <div className="card">
           <h2 className="section-title mb-4">Quick actions</h2>
           <div className="space-y-2">
-            <Link href="/client/workouts" className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors border border-slate-100">
+            <Link href="/client/calendar" className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors border border-slate-100">
               <span className="text-xl">🏋️</span>
               <div>
-                <p className="text-sm font-medium text-slate-800">Log a workout</p>
-                <p className="text-xs text-slate-400">Record today's session</p>
+                <p className="text-sm font-medium text-slate-800">My training</p>
+                <p className="text-xs text-slate-400">View and log today's workout</p>
               </div>
             </Link>
             <Link href="/client/checkins" className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors border border-slate-100">

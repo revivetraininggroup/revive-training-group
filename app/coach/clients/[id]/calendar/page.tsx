@@ -64,7 +64,7 @@ export default function ClientCalendarPage() {
     const [{ data: clientData }, { data: profileData }, { data: w }, { data: cl }] = await Promise.all([
       supabase.from('clients').select('*').eq('id', id).single(),
       supabase.from('profiles').select('*').eq('id', id).single(),
-      supabase.from('calendar_workouts').select('*, exercises:calendar_exercises(*)').eq('client_id', id),
+      supabase.from('calendar_workouts').select('*, exercises:calendar_exercises(*), logs:calendar_workout_logs(*, exercise_logs:calendar_exercise_logs(*))').eq('client_id', id),
       supabase.from('clients').select('*').eq('coach_id', user!.id).eq('active', true),
     ])
     const c = clientData ? { ...clientData, profile: profileData } : null
@@ -427,32 +427,56 @@ export default function ClientCalendarPage() {
             )}
 
             <div className="space-y-3">
-              {(workoutsByDate[selectedDay] ?? []).map((w: any) => (
+              {(workoutsByDate[selectedDay] ?? []).map((w: any) => {
+                const isDone = w.logs?.length > 0
+                const log = w.logs?.[0]
+                return (
                 <div
                   key={w.id}
-                  className={`rounded-xl border p-3 cursor-pointer transition-colors ${selectedWorkout?.id === w.id ? 'border-sky-300 bg-sky-50' : 'border-slate-200 hover:border-sky-200'}`}
+                  className={`rounded-xl border p-3 cursor-pointer transition-colors ${selectedWorkout?.id === w.id ? 'border-sky-300 bg-sky-50' : isDone ? 'border-green-200 bg-green-50' : 'border-slate-200 hover:border-sky-200'}`}
                   onClick={() => setSelectedWorkout(selectedWorkout?.id === w.id ? null : w)}
                 >
                   <div className="flex items-center justify-between">
-                    <p className="font-medium text-slate-800 text-sm">{w.title}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-slate-800 text-sm">{w.title}</p>
+                      {isDone && <span className="text-[10px] font-bold text-green-600 bg-green-100 px-2 py-0.5 rounded-full">✓ Completed</span>}
+                    </div>
                     <button onClick={e => { e.stopPropagation(); deleteWorkout(w.id) }} className="text-red-400 hover:text-red-600 text-xs ml-2">✕</button>
                   </div>
                   {w.notes && <p className="text-xs text-slate-400 mt-0.5">{w.notes}</p>}
+                  {isDone && log && (
+                    <div className="mt-1 flex gap-3 text-xs text-green-700">
+                      {log.duration_minutes && <span>⏱ {log.duration_minutes} min</span>}
+                      {log.notes && <span>💬 {log.notes}</span>}
+                    </div>
+                  )}
                   <p className="text-xs text-sky-600 mt-1 font-medium">{w.exercises?.length ?? 0} exercises {selectedWorkout?.id === w.id ? '▲' : '▼'}</p>
                   {selectedWorkout?.id === w.id && w.exercises?.length > 0 && (
                     <div className="mt-3 border-t border-slate-200 pt-3 space-y-2">
-                      {w.exercises.sort((a: any, b: any) => a.order_index - b.order_index).map((ex: any) => (
-                        <div key={ex.id} className="flex items-start justify-between text-xs gap-2">
-                          <span className="font-medium text-slate-700">{ex.name}</span>
-                          <span className="text-slate-400 text-right flex-shrink-0">
-                            {[ex.sets && `${ex.sets}×`, ex.reps, ex.weight].filter(Boolean).join(' ')}
-                          </span>
-                        </div>
-                      ))}
+                      {w.exercises.sort((a: any, b: any) => a.order_index - b.order_index).map((ex: any) => {
+                        const exLog = log?.exercise_logs?.find((el: any) => el.exercise_name === ex.name)
+                        return (
+                          <div key={ex.id} className="text-xs">
+                            <div className="flex items-start justify-between gap-2">
+                              <span className="font-medium text-slate-700">{ex.name}</span>
+                              <span className="text-slate-400 text-right flex-shrink-0">
+                                {[ex.sets && `${ex.sets}×`, ex.reps, ex.weight].filter(Boolean).join(' ')}
+                              </span>
+                            </div>
+                            {exLog && (
+                              <div className="mt-0.5 text-green-600 flex gap-2">
+                                <span>✓ {exLog.sets_completed} sets × {exLog.reps_completed} reps</span>
+                                {exLog.weight_used && <span>@ {exLog.weight_used}</span>}
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
                     </div>
                   )}
                 </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         )}

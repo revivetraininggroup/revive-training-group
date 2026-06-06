@@ -7,14 +7,23 @@ function toDateStr(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
-function getDaysAround(centerDate: Date, before: number, after: number) {
+function getWeekDays(weekStart: Date) {
   const days = []
-  for (let i = -before; i <= after; i++) {
-    const d = new Date(centerDate)
-    d.setDate(centerDate.getDate() + i)
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(weekStart)
+    d.setDate(weekStart.getDate() + i)
     days.push(d)
   }
   return days
+}
+
+function getWeekStart(date: Date) {
+  const d = new Date(date)
+  const day = d.getDay()
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1) // Monday start
+  d.setDate(diff)
+  d.setHours(0, 0, 0, 0)
+  return d
 }
 
 export default function ClientCalendarPage() {
@@ -27,8 +36,9 @@ export default function ClientCalendarPage() {
   const [saving, setSaving] = useState(false)
   const [userId, setUserId] = useState<string>('')
   const today = new Date()
-  const days = getDaysAround(today, 7, 30)
+  const [weekStart, setWeekStart] = useState<Date>(() => getWeekStart(new Date()))
   const supabase = createClient()
+  const days = getWeekDays(weekStart)
 
   useEffect(() => {
     async function load() {
@@ -97,7 +107,27 @@ export default function ClientCalendarPage() {
     <div>
       <h1 className="page-title mb-6">My Training</h1>
 
-      <div className="flex gap-2 overflow-x-auto pb-3 mb-6 scrollbar-hide">
+      {/* Week navigation */}
+      <div className="flex items-center justify-between mb-4">
+        <button
+          onClick={() => { const d = new Date(weekStart); d.setDate(d.getDate() - 7); setWeekStart(d) }}
+          className="btn-secondary text-sm px-3 py-1.5"
+        >
+          ← Prev week
+        </button>
+        <p className="text-sm font-medium text-slate-600">
+          {weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – {new Date(weekStart.getTime() + 6 * 86400000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+        </p>
+        <button
+          onClick={() => { const d = new Date(weekStart); d.setDate(d.getDate() + 7); setWeekStart(d) }}
+          className="btn-secondary text-sm px-3 py-1.5"
+        >
+          Next week →
+        </button>
+      </div>
+
+      {/* 7 day grid */}
+      <div className="grid grid-cols-7 gap-2 mb-6">
         {days.map(d => {
           const ds = toDateStr(d)
           const hasWorkout = (workoutsByDate[ds] ?? []).length > 0
@@ -110,7 +140,7 @@ export default function ClientCalendarPage() {
             <button
               key={ds}
               onClick={() => { setSelectedDate(ds); setSelectedWorkout(null) }}
-              className={`flex-shrink-0 flex flex-col items-center gap-1 px-3 py-2.5 rounded-xl border transition-colors min-w-[56px]
+              className={`flex flex-col items-center gap-1 py-3 rounded-xl border transition-colors
                 ${isSelected ? 'bg-sky-600 border-sky-600 text-white' : 'bg-white border-slate-200 hover:border-sky-300'}
                 ${isPast && !isSelected ? 'opacity-60' : ''}
               `}

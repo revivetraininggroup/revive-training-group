@@ -110,7 +110,7 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
                 title={item.label}
                 className={clsx(
                   'relative flex items-center justify-center w-full h-9 rounded-lg transition-colors',
-                  pathname === item.href || pathname.startsWith(item.href + '/')
+                  (item.href === '/coach' ? pathname === '/coach' : pathname === item.href || pathname.startsWith(item.href + '/'))
                     ? 'bg-sky-50 text-sky-600'
                     : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'
                 )}
@@ -125,7 +125,7 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
                 key={item.href}
                 href={item.href}
                 className={clsx('sidebar-link flex items-center justify-between', {
-                  active: pathname === item.href || pathname.startsWith(item.href + '/')
+                  active: item.href === '/coach' ? pathname === '/coach' : pathname === item.href || pathname.startsWith(item.href + '/')
                 })}
               >
                 <span>{item.label}</span>
