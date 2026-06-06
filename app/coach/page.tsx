@@ -11,10 +11,15 @@ export default async function CoachDashboard() {
   if (user.email !== COACH_EMAIL) redirect('/client/dashboard')
   const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
 
-  const [{ count: clientCount }, { data: recentCheckins }, { data: recentLogs }] = await Promise.all([
+  const yesterday = new Date()
+  yesterday.setDate(yesterday.getDate() - 1)
+  yesterday.setHours(0, 0, 0, 0)
+
+  const [{ count: clientCount }, { data: recentCheckins }, { data: recentLogs }, { data: clientProfiles }] = await Promise.all([
     supabase.from('clients').select('*', { count: 'exact', head: true }).eq('coach_id', user.id).eq('active', true),
     supabase.from('checkins').select('*').order('submitted_at', { ascending: false }).limit(5),
-    supabase.from('workout_logs').select('*').order('logged_at', { ascending: false }).limit(5),
+    supabase.from('calendar_workout_logs').select('*, workout:calendar_workouts(title, client_id, scheduled_date)').gte('logged_at', yesterday.toISOString()).order('logged_at', { ascending: false }).limit(10),
+    supabase.from('profiles').select('id, full_name').eq('role', 'client'),
   ])
 
   const today = new Date()
@@ -78,18 +83,24 @@ export default async function CoachDashboard() {
           </div>
           {recentLogs && recentLogs.length > 0 ? (
             <div className="space-y-3">
-              {recentLogs.map((log: any) => (
+              {recentLogs.map((log: any) => {
+                const clientProfile = clientProfiles?.find((p: any) => p.id === log.workout?.client_id)
+                const logDate = new Date(log.logged_at)
+                const isToday = logDate.toDateString() === new Date().toDateString()
+                return (
                 <div key={log.id} className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
                   <div>
-                    <p className="text-sm font-medium text-slate-800">{log.client?.full_name}</p>
-                    <p className="text-xs text-slate-400">{new Date(log.logged_at).toLocaleDateString()}</p>
+                    <p className="text-sm font-medium text-slate-800">{clientProfile?.full_name ?? 'Client'}</p>
+                    <p className="text-xs text-slate-500">{log.workout?.title}</p>
+                    <p className="text-xs text-slate-400">{isToday ? 'Today' : 'Yesterday'} · {logDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}{log.duration_minutes ? ` · ${log.duration_minutes} min` : ''}</p>
                   </div>
-                  <span className="badge badge-green">Completed ✓</span>
+                  <span className="badge badge-green">✓ Done</span>
                 </div>
-              ))}
+                )
+              })}
             </div>
           ) : (
-            <p className="text-sm text-slate-400">No workout logs yet.</p>
+            <p className="text-sm text-slate-400">No workouts logged today or yesterday.</p>
           )}
         </div>
       </div>

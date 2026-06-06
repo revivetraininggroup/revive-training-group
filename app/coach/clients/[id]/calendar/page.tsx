@@ -303,6 +303,8 @@ export default function ClientCalendarPage() {
               const isToday = dateStr === todayStr
               const isSelected = dateStr === selectedDay
               const isPast = dateStr ? dateStr < todayStr : false
+              const allDone = dayWorkouts.length > 0 && dayWorkouts.every((w: any) => w.logs?.length > 0)
+              const someDone = dayWorkouts.some((w: any) => w.logs?.length > 0)
 
               return (
                 <div
@@ -323,7 +325,8 @@ export default function ClientCalendarPage() {
                       </div>
                       <div className="space-y-0.5">
                         {dayWorkouts.slice(0, 2).map((w: any) => (
-                          <div key={w.id} className="text-[10px] bg-sky-100 text-sky-800 rounded-md px-1.5 py-0.5 truncate font-medium leading-4">
+                          <div key={w.id} className={`text-[10px] rounded-md px-1.5 py-0.5 truncate font-medium leading-4 flex items-center gap-1 ${w.logs?.length > 0 ? 'bg-green-100 text-green-800' : 'bg-sky-100 text-sky-800'}`}>
+                            {w.logs?.length > 0 && <span>✓</span>}
                             {w.title}
                           </div>
                         ))}
@@ -331,6 +334,9 @@ export default function ClientCalendarPage() {
                           <div className="text-[10px] text-slate-400 font-medium">+{dayWorkouts.length - 2} more</div>
                         )}
                       </div>
+                      {allDone && (
+                        <div className="mt-1 text-[10px] font-bold text-green-600">✓ All done</div>
+                      )}
                     </>
                   )}
                 </div>
