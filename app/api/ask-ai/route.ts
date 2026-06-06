@@ -11,7 +11,7 @@ export async function POST(req: Request) {
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-opus-4-6',
       max_tokens: 1000,
       system: `You are an expert personal training and coaching assistant built into the Revive Training Group coaching platform. You help coaches with:
 - Programming workouts and training plans
