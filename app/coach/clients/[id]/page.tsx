@@ -8,7 +8,7 @@ import Link from 'next/link'
 export default function ClientDetailPage() {
   const { id } = useParams()
   const [client, setClient] = useState<any>(null)
-  const [checkins, setCheckins] = useState<any[]>([])  const [checkins, setCheckins] = useState<any[]>([])
+  const [checkins, setCheckins] = useState<any[]>([])
   const [stats, setStats] = useState<any[]>([])
   const [logs, setLogs] = useState<any[]>([])
   const [onboarding, setOnboarding] = useState<any>(null)
