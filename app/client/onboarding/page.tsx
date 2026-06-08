@@ -82,7 +82,7 @@ export default function ClientOnboardingPage() {
   async function save() {
     setSaving(true)
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    if (!user) { console.error('No user found'); setSaving(false); return }
 
     const payload = {
       client_id: user.id,
@@ -91,11 +91,17 @@ export default function ClientOnboardingPage() {
       updated_at: new Date().toISOString(),
     }
 
+    console.log('Saving onboarding for user:', user.id)
+    console.log('Has existing:', hasExisting)
+
     if (hasExisting) {
-      await supabase.from('client_onboarding').update(payload).eq('client_id', user.id)
+      const { error } = await supabase.from('client_onboarding').update(payload).eq('client_id', user.id)
+      if (error) console.error('Update error:', error)
+      else console.log('Update success')
     } else {
-      await supabase.from('client_onboarding').insert(payload)
-      setHasExisting(true)
+      const { error } = await supabase.from('client_onboarding').insert(payload)
+      if (error) console.error('Insert error:', error)
+      else { console.log('Insert success'); setHasExisting(true) }
     }
 
     setSaving(false)
