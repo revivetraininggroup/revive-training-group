@@ -47,3 +47,5 @@ create policy "Coach reads client onboarding" on public.client_onboarding
   for select using (
     exists (select 1 from public.clients where id = client_id and coach_id = auth.uid())
   );
+
+grant all on public.client_onboarding to authenticated;

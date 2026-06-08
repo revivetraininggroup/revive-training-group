@@ -115,11 +115,6 @@ export default async function CoachDashboard() {
           <p className="font-medium text-slate-800 group-hover:text-sky-700">Manage clients</p>
           <p className="text-sm text-slate-400 mt-0.5">Add, view, and edit client profiles</p>
         </Link>
-        <Link href="/coach/programs" className="card hover:border-sky-300 transition-colors cursor-pointer group">
-          <div className="text-2xl mb-2">📋</div>
-          <p className="font-medium text-slate-800 group-hover:text-sky-700">Build programs</p>
-          <p className="text-sm text-slate-400 mt-0.5">Create and assign workout programs</p>
-        </Link>
         <Link href="/coach/messages" className="card hover:border-sky-300 transition-colors cursor-pointer group">
           <div className="text-2xl mb-2">💬</div>
           <p className="font-medium text-slate-800 group-hover:text-sky-700">Messages</p>

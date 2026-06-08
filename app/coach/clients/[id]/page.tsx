@@ -8,12 +8,11 @@ import Link from 'next/link'
 export default function ClientDetailPage() {
   const { id } = useParams()
   const [client, setClient] = useState<any>(null)
-  const [programs, setPrograms] = useState<any[]>([])
-  const [checkins, setCheckins] = useState<any[]>([])
+  const [checkins, setCheckins] = useState<any[]>([])  const [checkins, setCheckins] = useState<any[]>([])
   const [stats, setStats] = useState<any[]>([])
   const [logs, setLogs] = useState<any[]>([])
   const [onboarding, setOnboarding] = useState<any>(null)
-  const [tab, setTab] = useState<'overview' | 'programs' | 'checkins' | 'stats' | 'logs' | 'onboarding'>('overview')
+  const [tab, setTab] = useState<'overview' | 'checkins' | 'stats' | 'logs' | 'onboarding'>('overview')
   const [showProfile, setShowProfile] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [editForm, setEditForm] = useState({ full_name: '', goal: '', notes: '' })
@@ -27,14 +26,13 @@ export default function ClientDetailPage() {
       const [{ data: clientData }, { data: profileData }, { data: p }, { data: ci }, { data: s }, { data: l }] = await Promise.all([
         supabase.from('clients').select('*').eq('id', id).single(),
         supabase.from('profiles').select('*').eq('id', id).single(),
-        supabase.from('programs').select('*').eq('client_id', id).order('created_at', { ascending: false }),
         supabase.from('checkins').select('*, client:profiles(full_name, email)').eq('client_id', id).order('submitted_at', { ascending: false }),
         supabase.from('body_stats').select('*').eq('client_id', id).order('logged_at', { ascending: false }),
         supabase.from('calendar_workout_logs').select('*, workout:calendar_workouts(title, scheduled_date)').eq('client_id', id).order('logged_at', { ascending: false }),
       ])
       const { data: ob } = await supabase.from('client_onboarding').select('*').eq('client_id', id).maybeSingle()
       const c = clientData ? { ...clientData, profile: profileData } : null
-      setClient(c); setPrograms(p ?? []); setCheckins(ci ?? []); setStats(s ?? []); setLogs(l ?? []); setOnboarding(ob ?? null)
+      setClient(c); setCheckins(ci ?? []); setStats(s ?? []); setLogs(l ?? []); setOnboarding(ob ?? null)
     }
     load()
   }, [id])
@@ -61,7 +59,7 @@ export default function ClientDetailPage() {
 
   if (!client) return <div className="text-slate-400">Loading...</div>
 
-  const tabs = ['overview', 'programs', 'checkins', 'stats', 'logs', 'onboarding'] as const
+  const tabs = ['overview', 'checkins', 'stats', 'logs', 'onboarding'] as const
 
   return (
     <div>
@@ -103,27 +101,12 @@ export default function ClientDetailPage() {
 
       {tab === 'overview' && (
         <div className="grid grid-cols-2 gap-4">
-          <div className="stat-card"><span className="stat-label">Programs</span><span className="stat-value">{programs.length}</span></div>
           <div className="stat-card"><span className="stat-label">Check-ins</span><span className="stat-value">{checkins.length}</span></div>
           <div className="stat-card"><span className="stat-label">Workouts logged</span><span className="stat-value">{logs.length}</span></div>
           <div className="stat-card">
             <span className="stat-label">Current weight</span>
             <span className="stat-value">{stats[0]?.weight_lbs ? `${stats[0].weight_lbs} lbs` : '—'}</span>
           </div>
-        </div>
-      )}
-
-      {tab === 'programs' && (
-        <div className="space-y-3">
-          {programs.length === 0 ? <p className="text-slate-400 text-sm">No programs yet.</p> : programs.map(p => (
-            <div key={p.id} className="card flex items-center justify-between">
-              <div>
-                <p className="font-medium text-slate-800">{p.title}</p>
-                <p className="text-xs text-slate-400">{p.start_date} → {p.end_date || 'ongoing'}</p>
-              </div>
-              <Link href={`/coach/programs/${p.id}`} className="btn-secondary text-xs">Edit</Link>
-            </div>
-          ))}
         </div>
       )}
 
