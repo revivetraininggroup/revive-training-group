@@ -135,7 +135,7 @@ export default function ClientPhotosPage() {
                     <p className="text-xs text-slate-300 mt-0.5">{label} photo</p>
                   </div>
                 )}
-                <input ref={ref} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => handleFileSelect(key, e)} />
+                <input ref={ref} type="file" accept="image/*" className="hidden" onChange={e => handleFileSelect(key, e)} />
               </div>
             </div>
           ))}
