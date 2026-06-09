@@ -81,3 +81,12 @@ body {
 .rating-fill {
   @apply h-full rounded-full bg-sky-500;
 }
+
+/* Mobile responsive overrides */
+@media (max-width: 768px) {
+  .page-title { @apply text-xl; }
+  .section-title { @apply text-base; }
+  .card { @apply p-4; }
+  .stat-value { @apply text-xl; }
+  .btn-primary, .btn-secondary { @apply py-2.5 text-sm; }
+}
