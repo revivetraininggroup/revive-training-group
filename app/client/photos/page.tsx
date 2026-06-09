@@ -189,7 +189,7 @@ export default function ClientPhotosPage() {
                     ].map(({ url, label }) => url ? (
                       <div key={label}>
                         <p className="text-xs font-medium text-slate-400 mb-1">{label}</p>
-                        <img src={url} alt={label} className="w-full rounded-lg object-cover" style={{ height: '200px' }} />
+                        <img src={url} alt={label} className="w-full rounded-lg object-contain bg-slate-50" style={{ maxHeight: '400px' }} />
                       </div>
                     ) : (
                       <div key={label} className="bg-slate-50 rounded-lg flex items-center justify-center" style={{ height: '200px' }}>

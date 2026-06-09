@@ -77,7 +77,7 @@ export default function CoachPhotosPage() {
                         <div key={label}>
                           <p className="text-xs text-slate-400 mb-1">{label}</p>
                           {url ? (
-                            <img src={url} alt={label} className="w-full rounded-lg object-cover" style={{ height: '140px' }} />
+                            <img src={url} alt={label} className="w-full rounded-lg object-contain bg-slate-50" style={{ maxHeight: '400px' }} />
                           ) : (
                             <div className="bg-slate-100 rounded-lg flex items-center justify-center" style={{ height: '140px' }}>
                               <p className="text-xs text-slate-300">—</p>
@@ -132,7 +132,7 @@ export default function CoachPhotosPage() {
                       <div key={label}>
                         <p className="text-xs font-medium text-slate-400 mb-2">{label}</p>
                         {url ? (
-                          <img src={url} alt={label} className="w-full rounded-xl object-cover" style={{ height: '220px' }} />
+                          <img src={url} alt={label} className="w-full rounded-xl object-contain bg-slate-50" style={{ maxHeight: '500px' }} />
                         ) : (
                           <div className="bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center" style={{ height: '220px' }}>
                             <p className="text-xs text-slate-300">No {label.toLowerCase()} photo</p>
