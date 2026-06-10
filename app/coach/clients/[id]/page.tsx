@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import WeightGraph from '@/components/WeightGraph'
 
 export default function ClientDetailPage() {
   const { id } = useParams()
@@ -18,6 +19,8 @@ export default function ClientDetailPage() {
   const [editForm, setEditForm] = useState({ full_name: '', goal: '', notes: '' })
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [statForm, setStatForm] = useState({ weight_lbs: '', body_fat_pct: '', notes: '', logged_at: new Date().toISOString().split('T')[0] })
+  const [savingStat, setSavingStat] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -52,8 +55,23 @@ export default function ClientDetailPage() {
     if (client) setEditForm({ full_name: client.profile?.full_name ?? '', goal: client.goal ?? '', notes: client.notes ?? '' })
   }, [client])
 
+  async function logStat(e: React.FormEvent) {
+    e.preventDefault()
+    setSavingStat(true)
+    await supabase.from('body_stats').insert({
+      client_id: id,
+      weight_lbs: statForm.weight_lbs ? parseFloat(statForm.weight_lbs) : null,
+      body_fat_pct: statForm.body_fat_pct ? parseFloat(statForm.body_fat_pct) : null,
+      notes: statForm.notes || null,
+      logged_at: statForm.logged_at,
+    })
+    setStatForm({ weight_lbs: '', body_fat_pct: '', notes: '', logged_at: new Date().toISOString().split('T')[0] })
+    const { data: s } = await supabase.from('body_stats').select('*').eq('client_id', id).order('logged_at', { ascending: false })
+    setStats(s ?? [])
+    setSavingStat(false)
+  }
+
   async function saveEdit() {
-    setSaving(true)
     await supabase.from('profiles').update({ full_name: editForm.full_name }).eq('id', id)
     await supabase.from('clients').update({ goal: editForm.goal, notes: editForm.notes }).eq('id', id)
     setSaving(false)
@@ -154,29 +172,57 @@ export default function ClientDetailPage() {
       )}
 
       {tab === 'stats' && (
-        <div className="card p-0 overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-slate-50 border-b border-slate-200">
-              <tr>
-                <th className="table-header">Date</th>
-                <th className="table-header">Weight (lbs)</th>
-                <th className="table-header">Body fat %</th>
-                <th className="table-header">Notes</th>
-              </tr>
-            </thead>
-            <tbody>
-              {stats.length === 0 ? (
-                <tr><td colSpan={4} className="table-cell text-slate-400 text-center py-8">No stats logged yet.</td></tr>
-              ) : stats.map(s => (
-                <tr key={s.id} className="table-row">
-                  <td className="table-cell">{s.logged_at}</td>
-                  <td className="table-cell">{s.weight_lbs ?? '—'}</td>
-                  <td className="table-cell">{s.body_fat_pct ? `${s.body_fat_pct}%` : '—'}</td>
-                  <td className="table-cell text-slate-400">{s.notes || '—'}</td>
+        <div className="space-y-4">
+          <div className="card">
+            <h2 className="section-title mb-4">Weight over time</h2>
+            <WeightGraph stats={stats} />
+          </div>
+          <div className="card">
+            <h2 className="section-title mb-3">Add entry</h2>
+            <form onSubmit={logStat} className="grid grid-cols-2 md:grid-cols-4 gap-3 items-end">
+              <div>
+                <label className="label">Date</label>
+                <input className="input" type="date" value={statForm.logged_at} onChange={e => setStatForm({...statForm, logged_at: e.target.value})} />
+              </div>
+              <div>
+                <label className="label">Weight (lbs)</label>
+                <input className="input" type="number" step="0.1" placeholder="185.5" value={statForm.weight_lbs} onChange={e => setStatForm({...statForm, weight_lbs: e.target.value})} />
+              </div>
+              <div>
+                <label className="label">Body fat % (optional)</label>
+                <input className="input" type="number" step="0.1" placeholder="18.5" value={statForm.body_fat_pct} onChange={e => setStatForm({...statForm, body_fat_pct: e.target.value})} />
+              </div>
+              <div>
+                <button type="submit" className="btn-primary w-full" disabled={savingStat}>
+                  {savingStat ? 'Saving...' : '+ Add entry'}
+                </button>
+              </div>
+            </form>
+          </div>
+          <div className="card p-0 overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th className="table-header">Date</th>
+                  <th className="table-header">Weight (lbs)</th>
+                  <th className="table-header">Body fat %</th>
+                  <th className="table-header">Notes</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {stats.length === 0 ? (
+                  <tr><td colSpan={4} className="table-cell text-slate-400 text-center py-8">No stats logged yet.</td></tr>
+                ) : stats.map(s => (
+                  <tr key={s.id} className="table-row">
+                    <td className="table-cell">{s.logged_at}</td>
+                    <td className="table-cell">{s.weight_lbs ?? '—'}</td>
+                    <td className="table-cell">{s.body_fat_pct ? `${s.body_fat_pct}%` : '—'}</td>
+                    <td className="table-cell text-slate-400">{s.notes || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

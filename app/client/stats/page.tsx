@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
+import WeightGraph from '@/components/WeightGraph'
 
 export default function ClientStatsPage() {
   const [stats, setStats] = useState<any[]>([])
-  const [form, setForm] = useState({ weight_lbs: '', body_fat_pct: '', notes: '' })
+  const [form, setForm] = useState({ weight_lbs: '', body_fat_pct: '', notes: '', logged_at: new Date().toISOString().split('T')[0] })
   const [saving, setSaving] = useState(false)
   const supabase = createClient()
 
@@ -26,9 +27,9 @@ export default function ClientStatsPage() {
       weight_lbs: form.weight_lbs ? parseFloat(form.weight_lbs) : null,
       body_fat_pct: form.body_fat_pct ? parseFloat(form.body_fat_pct) : null,
       notes: form.notes || null,
-      logged_at: new Date().toISOString().split('T')[0]
+      logged_at: form.logged_at
     })
-    setForm({ weight_lbs: '', body_fat_pct: '', notes: '' })
+    setForm({ weight_lbs: '', body_fat_pct: '', notes: '', logged_at: new Date().toISOString().split('T')[0] })
     load()
     setSaving(false)
   }
@@ -60,10 +61,19 @@ export default function ClientStatsPage() {
         </div>
       </div>
 
+      <div className="card mb-6">
+        <h2 className="section-title mb-4">Weight over time</h2>
+        <WeightGraph stats={stats} />
+      </div>
+
       <div className="grid grid-cols-2 gap-6">
         <div className="card">
           <h2 className="section-title mb-4">Log today's stats</h2>
           <form onSubmit={logStats} className="space-y-3">
+            <div>
+              <label className="label">Date</label>
+              <input className="input" type="date" value={form.logged_at} onChange={e => setForm({...form, logged_at: e.target.value})} />
+            </div>
             <div>
               <label className="label">Weight (lbs)</label>
               <input className="input" type="number" step="0.1" placeholder="185.5" value={form.weight_lbs} onChange={e => setForm({...form, weight_lbs: e.target.value})} />
