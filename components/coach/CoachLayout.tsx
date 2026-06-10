@@ -81,7 +81,7 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
         <div className="px-4 py-5 border-b border-slate-100">
           <img src="/rtg-logo-white.png" alt="Revive Training Group" className="h-20 w-auto" />
         </div>
-        <span className="text-xs text-sky-600 font-medium px-4 pt-3 block">Coach Portal</span>
+        <span className="text-xs text-sky-600 font-medium px-4 pt-3 block">{userEmail === ADMIN_EMAIL ? 'CEO & Coach Portal' : 'Coach Portal'}</span>
         <nav className="flex-1 p-3 space-y-0.5">
           {navItems.map(item => (
             <Link
@@ -123,7 +123,7 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
           <div className="absolute top-0 right-0 w-64 h-full bg-white shadow-xl flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="px-4 py-5 border-b border-slate-100" style={{ backgroundColor: '#1a2e4a' }}>
               <img src="/rtg-logo-dark.png" alt="Revive" className="h-9 w-auto" />
-              <p className="text-xs text-sky-300 mt-1">Coach Portal</p>
+              <p className="text-xs text-sky-300 mt-1">{userEmail === ADMIN_EMAIL ? 'CEO & Coach Portal' : 'Coach Portal'}</p>
             </div>
             <nav className="flex-1 p-3 space-y-0.5">
               {navItems.map(item => (
