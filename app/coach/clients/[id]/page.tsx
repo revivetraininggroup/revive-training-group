@@ -13,6 +13,8 @@ export default function ClientDetailPage() {
   const [stats, setStats] = useState<any[]>([])
   const [logs, setLogs] = useState<any[]>([])
   const [onboarding, setOnboarding] = useState<any>(null)
+  const [aiAnalysis, setAiAnalysis] = useState<string>('')
+  const [loadingAnalysis, setLoadingAnalysis] = useState(false)
   const [tab, setTab] = useState<'overview' | 'checkins' | 'stats' | 'logs' | 'onboarding'>('overview')
   const [showProfile, setShowProfile] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -47,6 +49,26 @@ export default function ClientDetailPage() {
       const { data: ob } = await supabase.from('client_onboarding').select('*').eq('client_id', id).maybeSingle()
       const c = clientData ? { ...clientData, profile: profileData } : null
       setClient(c); setCheckins(ci ?? []); setStats(s ?? []); setLogs(l ?? []); setOnboarding(ob ?? null)
+
+      // Auto-run AI analysis
+      if (clientData && (ci?.length || s?.length || l?.length)) {
+        setLoadingAnalysis(true)
+        try {
+          const res = await fetch('/api/client-analysis', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              client: { ...clientData, profile: profileData },
+              checkins: ci ?? [],
+              stats: s ?? [],
+              logs: l ?? [],
+            })
+          })
+          const data = await res.json()
+          setAiAnalysis(data.analysis)
+        } catch {}
+        setLoadingAnalysis(false)
+      }
     }
     load()
   }, [id])
@@ -129,12 +151,32 @@ export default function ClientDetailPage() {
       </div>
 
       {tab === 'overview' && (
-        <div className="grid grid-cols-2 gap-4">
-          <div className="stat-card"><span className="stat-label">Check-ins</span><span className="stat-value">{checkins.length}</span></div>
-          <div className="stat-card"><span className="stat-label">Workouts logged</span><span className="stat-value">{logs.length}</span></div>
-          <div className="stat-card">
-            <span className="stat-label">Current weight</span>
-            <span className="stat-value">{stats[0]?.weight_lbs ? `${stats[0].weight_lbs} lbs` : '—'}</span>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="stat-card"><span className="stat-label">Check-ins</span><span className="stat-value">{checkins.length}</span></div>
+            <div className="stat-card"><span className="stat-label">Workouts logged</span><span className="stat-value">{logs.length}</span></div>
+            <div className="stat-card">
+              <span className="stat-label">Current weight</span>
+              <span className="stat-value">{stats[0]?.weight_lbs ? `${stats[0].weight_lbs} lbs` : '—'}</span>
+            </div>
+          </div>
+
+          <div className="card" style={{ borderLeft: '3px solid #0ea5e9' }}>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-sky-600 text-sm font-semibold">✦ AI Performance Analysis</span>
+              {loadingAnalysis && <span className="text-xs text-slate-400 animate-pulse">Analyzing...</span>}
+            </div>
+            {loadingAnalysis ? (
+              <div className="space-y-2">
+                <div className="h-3 bg-slate-100 rounded animate-pulse w-full" />
+                <div className="h-3 bg-slate-100 rounded animate-pulse w-5/6" />
+                <div className="h-3 bg-slate-100 rounded animate-pulse w-4/6" />
+              </div>
+            ) : aiAnalysis ? (
+              <p className="text-sm text-slate-700 leading-relaxed">{aiAnalysis}</p>
+            ) : (
+              <p className="text-sm text-slate-400">No data yet -- analysis will appear once the client has check-ins or logged workouts.</p>
+            )}
           </div>
         </div>
       )}
