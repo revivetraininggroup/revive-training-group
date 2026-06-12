@@ -118,7 +118,7 @@ export default function AskAI() {
                     ? 'bg-sky-600 text-white rounded-tr-sm'
                     : 'bg-slate-100 text-slate-800 rounded-tl-sm'
                 }`}>
-                  <div className="whitespace-pre-wrap">{m.content}</div>
+                  <div className="whitespace-pre-wrap">{m.content.replace(/\*\*/g, '').replace(/\*/g, '').replace(/#{1,6} /g, '').replace(/`/g, '')}</div>
                 </div>
               </div>
             ))}
